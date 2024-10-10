@@ -17,6 +17,7 @@ void send_full_response(int client_sock, uint8_t return_code, uint32_t content_l
     if (response == NULL) {
         perror("Failed to allocate memory for response");
         return;
+        //TODO: Add some logging  - level ERROR
     }
 
     // Fill the header
@@ -40,12 +41,14 @@ void send_full_response(int client_sock, uint8_t return_code, uint32_t content_l
     if (errno=-1){
         printf("Sending Error: %s\n", strerror(errno));
         free(response);
+        //TODO: Add some logging  - level ERROR
     }
     free(response);
 }
 
 void handle_get_operation(int client_sock, uint8_t *buffer) {
     // Print the buffer contents for debugging
+    //buffer is limited to 1024 - safe
     printf("Buffer contents (%d bytes):\n", BUFFER_SIZE);
     for (size_t i = 0; i < BUFFER_SIZE; i++) {
         printf("%02x ", buffer[i]);
@@ -56,6 +59,7 @@ void handle_get_operation(int client_sock, uint8_t *buffer) {
     printf("\n");
 
     // Extract opcode, reserved, session ID, and filename length
+    // safe here because of prior limits
     uint8_t reserved;
     uint32_t session_id;
     uint16_t filename_length;
@@ -67,7 +71,7 @@ void handle_get_operation(int client_sock, uint8_t *buffer) {
     filename_length = ntohs(filename_length);  // Convert to host byte order
 
     // Extract filename
-    char filename[256];  // Assuming max filename length is 256 bytes
+    char filename[256];  // Assuming max filename length is max 256 bytes
     memcpy(filename, buffer + 8, filename_length);
     filename[filename_length] = '\0';  // Null-terminate the string
 
@@ -92,13 +96,15 @@ void handle_get_operation(int client_sock, uint8_t *buffer) {
         current_Session->permission != PERM_READ_WRITE_ADMIN) {
         // If permissions are not READ, WRITE, READ_WRITE, or ADMIN, return code 0x03
         send_response_code(client_sock, 0x03, 0);
+        //TODO: Add some logging  - level ERROR
         return;
         }
 
     char cwd[512];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
-        perror("getcwd() error");
+        perror("getcwd() error"); //error check the cwd command
         send_full_response(client_sock, 0x02, 0, NULL, 0);  // Error code for failed to get current directory
+        //TODO: Add some logging  - level ERROR
         return;
     }
 
@@ -107,7 +113,8 @@ void handle_get_operation(int client_sock, uint8_t *buffer) {
     int ret = snprintf(filepath, sizeof(filepath), "%s/%s", cwd, filename);
     if (ret < 0 || (size_t)ret >= sizeof(filepath)) {  // Corrected the comparison
         fprintf(stderr, "Error: Path length exceeds buffer size or snprintf failed.\n");
-        send_full_response(client_sock, 0x02, 0, NULL, 0);  // Error code for path length issue
+        send_full_response(client_sock, 0x02, 0, NULL, 0);  // Error code for path length issue3
+        //TODO: Add some logging  - level ERROR
         return;
     }
 
@@ -116,6 +123,7 @@ void handle_get_operation(int client_sock, uint8_t *buffer) {
     if (stat(filepath, &st) == -1) {
         perror("File not found");
         send_full_response(client_sock, 0x02, 0, NULL, 0);  // Error code for file not found
+        //TODO: Add some logging  - level ERROR
         return;
     }
 
@@ -124,6 +132,7 @@ void handle_get_operation(int client_sock, uint8_t *buffer) {
     if (fd == -1) {
         perror("Failed to open file");
         send_full_response(client_sock, 0x02, 0, NULL, 0);  // Error code for failed to open file
+        //TODO: Add some logging  - level ERROR
         return;
     }
 
@@ -136,6 +145,7 @@ void handle_get_operation(int client_sock, uint8_t *buffer) {
         perror("Failed to allocate memory for file buffer");
         close(fd);
         send_full_response(client_sock, 0x02, 0, NULL, 0);  // Error code for memory allocation failure
+        //TODO: Add some logging  - level ERROR    
         return;
     }
 
@@ -146,6 +156,7 @@ void handle_get_operation(int client_sock, uint8_t *buffer) {
         free(file_buffer);
         close(fd);
         send_full_response(client_sock, 0x02, 0, NULL, 0);  // Error code for file read failure
+        //TODO: Add some logging  - level ERROR
         return;
     }
 
@@ -158,4 +169,5 @@ void handle_get_operation(int client_sock, uint8_t *buffer) {
     // Clean up
     free(file_buffer);
     printf("File '%s' sent successfully.\n", filename);
+    //TODO: Add some logging  - level INFO
 }
