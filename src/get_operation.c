@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <arpa/inet.h> // for htonl function
 #include <fcntl.h>
+#include <errno.h>
 
 // Function to create and send the response
 void send_full_response(int client_sock, uint8_t return_code, uint32_t content_length, uint8_t *content, size_t content_size) {
@@ -36,7 +37,10 @@ void send_full_response(int client_sock, uint8_t return_code, uint32_t content_l
     }
     printf("\n");
     send(client_sock, response, total_size, 0);
-
+    if (errno=-1){
+        printf("Sending Error: %s\n", strerror(errno));
+        free(response);
+    }
     free(response);
 }
 

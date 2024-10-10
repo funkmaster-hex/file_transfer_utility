@@ -12,7 +12,7 @@
 
 void handle_client(int client_sock) {
     uint8_t buffer[1024];
-    int received_bytes;
+    int received_bytes = 0;
 
     // Process client requests in a loop
     while ((received_bytes = recv(client_sock, buffer, sizeof(buffer), 0)) > 0) {
@@ -21,11 +21,11 @@ void handle_client(int client_sock) {
             break;
         }
 
-        uint8_t opcode = buffer[0];
+        uint8_t opcode = buffer[0]; //cant be larger than 1 byte -safe
         printf("Received opcode: %02x\n", opcode);
 
         uint32_t session_id = 0;
-        Session* session = NULL;
+        Session* session = NULL; //initialize to 0
 
         // Retrieve session ID from the request if the opcode isn't for login (0x01)
         if (opcode != 0x01) {
